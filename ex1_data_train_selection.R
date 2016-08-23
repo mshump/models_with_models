@@ -63,7 +63,7 @@ library(mlbench)
 ###############################################################
 
 
-resample_model <- function(n_sample=1,r_sample=1,model_use=list(1,2)) {
+resample_model <- function(n_sample=1,r_sample=0.75,model_use=list(1,16)) {
   
   perf_df_test <-  perf_df_train <- data.frame(model_id= integer(0)
                                                ,model_name= character(0)
