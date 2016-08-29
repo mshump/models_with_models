@@ -1041,7 +1041,7 @@ mods_eval$step_label <-paste(mods_eval$ensemble_step,mods_eval$model_type, sep='
 str(mods_eval)
 
 # visualize the model evaluations
-ggplot(data=mods_eval, aes(x=step_label, y=model_eval, group=1)) +
+ggplot(data=mods_eval, aes(x=step_label, y=model_eval, group=1, fill=ensemble_step)) +
   geom_line() +
   geom_point() +
   geom_label(aes(label=floor(model_eval*10000)/100))
