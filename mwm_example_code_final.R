@@ -528,7 +528,7 @@ resample_model <- function(n_sample=1,r_sample=0.75,model_use=list(1,16)) {
       model <-ipred:::bagging(Formula,data=data_in_train)
       data_in_train$pred_mod <- predict(model ,x_train)
       data_in_test$pred_mod <- predict(model ,x_test)
-     
+      
       #TRAIN performance
       
       data_tmp <- data_in_train[,c(resp_var, "pred_mod")]
@@ -724,12 +724,12 @@ fact_levels <- seq(1,length(fact_labels), 1)
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX#
 
 
-set.seed(111) # logistic > linear discriminant> CART >>>
+set.seed(111) # linear discriminant > logistic > CART >>>
 set.seed(1111) # CART > logistic > SVM > linear discriminant >>>
 set.seed(11111) # CART > SVM > linear dscriminant > logistic >>>
 #set.seed(Sys.time())
 out_test_perf <- resample_model(n_sample = 1 ,r_sample = 0.75, model_use=list(
-  1,2,5,7,8,9,10))
+  1,2,7,10))
 
 # Make a quick chart to compare
 ggplot(data=out_test_perf, aes(x=model_name, y=Pos_Pred_Value, fill=model_name)) +
@@ -744,7 +744,7 @@ ggplot(data=out_test_perf, aes(x=model_name, y=Pos_Pred_Value, fill=model_name))
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX#
 
 set.seed(Sys.time())
-out_test_perf <- resample_model(n_sample = 100 ,r_sample = 0.75, model_use=list(
+out_test_perf <- resample_model(n_sample = 1000 ,r_sample = 0.75, model_use=list(
   1,2,7,10))
 
 # Show a boxplot with means
@@ -753,6 +753,8 @@ ggplot(data=out_test_perf, aes(x=model_name, y=Pos_Pred_Value, fill=model_name))
   stat_summary(fun.y=mean, colour="darkred", geom="point", 
                shape=18, size=3) + 
   geom_text(data = means, aes(label = floor(Pos_Pred_Value*10000)/100, y = Pos_Pred_Value*1.01))
+
+
 
 # single variable box plots - can extend to all models at once
 #d <- melt(out_test_perf[,c("model_name", "Pos_Pred_Value")])
@@ -866,12 +868,26 @@ confusionMatrix(table(df_perf))
 # caret also has bagging processes
 
 
+r_sample     <- 0.75
+
+train_ratio <- r_sample
+#define % of training and test set
+trainindex <- sample(1:nrow(data_in),floor(nrow(data_in)*train_ratio))     #Random sample of rows for training set      
+
+data_in_train <- data_in[trainindex, ]   #get training set
+data_in_test <- data_in[-trainindex, ]   #get test set                                   
+
+x_train <- data_in_train[,pred_vars]
+x_test <- data_in_test[,pred_vars]
+
+
+
 library(adabag)
 
 data.train_bagging <- adabag:::bagging(Formula
-                              ,data=data_in_train
-                              ,mfinal=15
-                              ,control=rpart.control(maxdepth=5, minsplit=15))
+                                       ,data=data_in_train
+                                       ,mfinal=15
+                                       ,control=rpart.control(maxdepth=5, minsplit=15))
 
 
 summary(data.train_bagging)
@@ -894,25 +910,49 @@ data.test_bagging.pred$error
 ###########################
 # Exisiting boosting model #
 ###########################
+#4
 
 set.seed(111) 
-out_test_perf <- resample_model(n_sample = 1 ,r_sample = 0.75, model_use=list(10,13,16))
+out_test_perf <- resample_model(n_sample = 100 ,r_sample = 0.75, model_use=list(10,13,16))
 
 ggplot(data=out_test_perf, aes(x=model_name, y=Pos_Pred_Value, fill=model_name)) +
   geom_bar(stat="identity") +
   geom_label(aes(label = floor(Pos_Pred_Value*10000)/100, label.size = 0.25))
 
+
+means <- aggregate(Pos_Pred_Value ~  model_name, data=out_test_perf, mean)
+ggplot(data=out_test_perf, aes(x=model_name, y=Pos_Pred_Value, fill=model_name)) + geom_boxplot() +
+  stat_summary(fun.y=mean, colour="darkred", geom="point", 
+               shape=18, size=3) + 
+  geom_text(data = means, aes(label = floor(Pos_Pred_Value*10000)/100, y = Pos_Pred_Value*1.01))
+
+
 ###############################################
 # Boosting from selected R packages
 ###############################################
 
+
+
+r_sample     <- 0.75
+
+train_ratio <- r_sample
+#define % of training and test set
+trainindex <- sample(1:nrow(data_in),floor(nrow(data_in)*train_ratio))     #Random sample of rows for training set      
+
+data_in_train <- data_in[trainindex, ]   #get training set
+data_in_test <- data_in[-trainindex, ]   #get test set                                   
+
+x_train <- data_in_train[,pred_vars]
+x_test <- data_in_test[,pred_vars]
+
+
 library(adabag)
 
 data.train_boost <- adabag:::boosting(Formula
-                   ,data=data_in_train
-                   ,boos=TRUE
-                   ,mfinal=20
-                   ,coeflearn='Breiman')
+                                      ,data=data_in_train
+                                      ,boos=TRUE
+                                      ,mfinal=20
+                                      ,coeflearn='Breiman')
 
 summary(data.train_boost)
 
@@ -932,6 +972,18 @@ data.test_boost.pred$error
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX#
 #          stacking                            #
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX#
+
+r_sample     <- 0.75
+
+train_ratio <- r_sample
+#define % of training and test set
+trainindex <- sample(1:nrow(data_in),floor(nrow(data_in)*train_ratio))     #Random sample of rows for training set      
+
+data_in_train <- data_in[trainindex, ]   #get training set
+data_in_test <- data_in[-trainindex, ]   #get test set                                   
+
+x_train <- data_in_train[,pred_vars]
+x_test <- data_in_test[,pred_vars]
 
 
 ##################
@@ -955,8 +1007,8 @@ dotplot(results)
 mods_eval <- NULL
 
 mods_eval <- data.frame(ensemble_step= rep('sub_mod',length(algorithmList))
-                       ,model_type = rownames(summary(results)$statistics$Accuracy)
-                       ,model_eval = summary(results)$statistics$Accuracy[,'Mean'])
+                        ,model_type = rownames(summary(results)$statistics$Accuracy)
+                        ,model_eval = summary(results)$statistics$Accuracy[,'Mean'])
 
 # correlation between results
 modelCor(results)
@@ -970,8 +1022,8 @@ print(stack.glm)
 
 
 mods_eval <- rbind( mods_eval,data.frame(ensemble_step= 'sup_mod'
-                   ,model_type = 'glm'
-                   ,model_eval = max(stack.glm$error['Accuracy'])))
+                                         ,model_type = 'glm'
+                                         ,model_eval = max(stack.glm$error['Accuracy'])))
 
 # supervisor model: randomforest
 set.seed(seed)
@@ -979,8 +1031,8 @@ stack.rf <- caretStack(models, method="rf", metric="Accuracy", trControl=stackCo
 print(stack.rf)
 
 mods_eval <- rbind( mods_eval,data.frame(ensemble_step= 'sup_mod'
-                                        ,model_type = 'rf'
-                                        ,model_eval = max(stack.rf$error['Accuracy'])))
+                                         ,model_type = 'rf'
+                                         ,model_eval = max(stack.rf$error['Accuracy'])))
 
 rownames(mods_eval) <- NULL
 
