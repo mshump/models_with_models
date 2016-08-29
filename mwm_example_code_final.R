@@ -997,7 +997,7 @@ seed <- 111
 
 # create sub-models
 control <- trainControl(method="repeatedcv", number=10, repeats=3, savePredictions=TRUE, classProbs=TRUE)
-algorithmList <- c('lda', 'rpart', 'knn','glm', 'svmRadial') #, 
+algorithmList <- c('lda', 'rpart', 'knn','rf', 'svmRadial') #, 
 set.seed(seed)
 models <- caretList(Formula, data=data_in_train, trControl=control, methodList=algorithmList)
 results <- resamples(models)
